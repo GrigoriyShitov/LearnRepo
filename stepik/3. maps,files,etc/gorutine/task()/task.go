@@ -1,9 +1,14 @@
 package main
 
-func task(chan int, int) {
+import "fmt"
 
+func task(c chan int, n int) {
+	n++
+	c <- n
 }
 
 func main() {
-
+	c := make(chan int, 10)
+	task(c, 1)
+	fmt.Println(<-c)
 }
