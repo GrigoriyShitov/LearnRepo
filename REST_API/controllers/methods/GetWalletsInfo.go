@@ -3,9 +3,10 @@ package methods
 import (
 	"RestApi/storage"
 	"context"
+	"errors"
 )
 
-func GetWalletsInfo(ctx context.Context, id uint32) []storage.Wallet { // to do ([]storage.Wallet, error)
+func GetWalletsInfo(ctx context.Context, id uint32) ([]storage.Wallet, error) { // to do ([]storage.Wallet, error)
 
 	returnWallets := []storage.Wallet{}
 
@@ -14,5 +15,8 @@ func GetWalletsInfo(ctx context.Context, id uint32) []storage.Wallet { // to do 
 			returnWallets = append(returnWallets, wallet)
 		}
 	}
-	return returnWallets
+	if len(returnWallets) == 0 {
+		return returnWallets, errors.New("no wallets")
+	}
+	return returnWallets, nil
 }

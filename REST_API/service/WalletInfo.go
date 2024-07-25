@@ -12,18 +12,29 @@ import (
 )
 
 type UserInfo struct {
-	User    storage.User
+	User    *storage.User
 	Wallets []storage.Wallet
 }
 
 func UserHandler(w http.ResponseWriter, r *http.Request) {
+
+	var (
+		ReturnVal UserInfo
+		err       error
+	)
 	ctx := r.Context()
-	var ReturnVal UserInfo
+	Id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	ReturnVal.User, ReturnVal.Wallets, err = methods.UserWalletInfo(ctx, uint32(Id))
+	if err != nil {
+		if err.Error() == "user not found" {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(err.Error()))
+			return
+		} else if err.Error() == "no wallets" {
+			w.Write([]byte(err.Error()))
+		}
 
-	id, err := strconv.ParseUint(mux.Vars(r)["id"], 10, 32)
-	ReturnVal.User = methods.GetUserInfo(ctx, uint32(id))
-	ReturnVal.Wallets = methods.GetWalletsInfo(ctx, uint32(id))
-
+	}
 	data, err := json.MarshalIndent(ReturnVal, "", "    ")
 	if err != nil {
 		fmt.Println(err)
