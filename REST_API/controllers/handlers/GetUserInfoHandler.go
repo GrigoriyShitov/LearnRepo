@@ -1,7 +1,7 @@
-package service
+package handlers
 
 import (
-	"RestApi/controllers/methods"
+	"RestApi/service"
 	"RestApi/storage"
 	"encoding/json"
 	"fmt"
@@ -11,20 +11,15 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type UserInfo struct {
-	User    *storage.User
-	Wallets []storage.Wallet
-}
-
-func UserHandler(w http.ResponseWriter, r *http.Request) {
+func GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var (
-		ReturnVal UserInfo
+		ReturnVal *storage.UserInfo
 		err       error
 	)
 	ctx := r.Context()
 	Id, _ := strconv.Atoi(mux.Vars(r)["id"])
-	ReturnVal.User, ReturnVal.Wallets, err = methods.UserWalletInfo(ctx, uint32(Id))
+	ReturnVal, err = service.UserWalletInfo(ctx, uint(Id))
 	if err != nil {
 		if err.Error() == "user not found" {
 			w.WriteHeader(http.StatusNotFound)

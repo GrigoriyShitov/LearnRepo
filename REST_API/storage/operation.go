@@ -1,11 +1,18 @@
 package storage
 
 type Operation struct {
-	OperationId   uint32 `json:"operation_id"`
-	WalletId      uint32 `json:"wallet_id"`
-	Amount        int32  `json:"amount"`
-	OperationType string `json:"operation_type"`
-	OperationInfo string `json:"operation_info"`
+	OperationId   uint    `json:"operation_id"`
+	WalletId      uint    `json:"wallet_id"`
+	Amount        float64 `json:"amount"`
+	OperationType string  `json:"operation_type"`
+	OperationInfo string  `json:"operation_info"`
+}
+
+type NewOperation struct {
+	UserId   uint
+	WalletId uint
+	Type     string
+	Amount   float64
 }
 
 var Operations = []Operation{
@@ -13,7 +20,7 @@ var Operations = []Operation{
 	{
 		OperationId:   1,
 		WalletId:      1,
-		Amount:        100,
+		Amount:        500,
 		OperationType: "deposit",
 		OperationInfo: "some info",
 	},
@@ -21,7 +28,7 @@ var Operations = []Operation{
 	{
 		OperationId:   2,
 		WalletId:      1,
-		Amount:        100,
+		Amount:        250,
 		OperationType: "withdraw",
 		OperationInfo: "some info",
 	},

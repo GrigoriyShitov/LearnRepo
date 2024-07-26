@@ -1,9 +1,18 @@
 package storage
 
 type User struct {
-	ID       uint32 `json:"id"`
+	ID       uint   `json:"id"`
 	Username string `json:"username"`
 	Admin    bool   `json:"admin"`
+}
+
+type WalletsInfo struct {
+	WalletInfo Wallet  `json:"wallet"`
+	Balance    float64 `json:"balance"`
+}
+type UserInfo struct {
+	User        *User
+	WalletsList []WalletsInfo
 }
 
 var Users = []User{
