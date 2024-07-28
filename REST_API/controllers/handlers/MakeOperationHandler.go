@@ -29,7 +29,8 @@ func MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	AddOperation.Amount, _ = strconv.ParseFloat(mux.Vars(r)["amount"], 64)
-	err = service.OperationWithWallet(ctx, &AddOperation)
+	AddOperation.Category = mux.Vars(r)["category"]
+	err = service.NewOperationWithWallet(ctx, &AddOperation)
 	if err != nil {
 		w.Write([]byte("Hello, World!"))
 		return

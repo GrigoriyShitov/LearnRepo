@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func GetWalletsInfo(ctx context.Context, id uint) ([]storage.WalletsInfo, error) { // to do ([]storage.Wallet, error)
+func GetWalletsInfo(ctx context.Context, id uint) ([]storage.WalletsInfo, error) {
 
 	returnWallets, temp := []storage.WalletsInfo{}, storage.WalletsInfo{}
 

@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func OperationWithWallet(ctx context.Context, AddOperation *storage.NewOperation) error {
+func NewOperationWithWallet(ctx context.Context, AddOperation *storage.NewOperation) error {
 
 	for _, wallet := range storage.Wallets {
 		if wallet.WalletId == AddOperation.WalletId && wallet.UserId == AddOperation.UserId {

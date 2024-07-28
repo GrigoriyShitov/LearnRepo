@@ -7,6 +7,7 @@ func AddNewOperation(AddOperation *NewOperation) error {
 	operationToAdd.WalletId = AddOperation.WalletId
 	operationToAdd.Amount = AddOperation.Amount
 	operationToAdd.OperationType = AddOperation.Type
+	operationToAdd.OperationCategory = AddOperation.Category
 	Operations = append(Operations, operationToAdd)
 	return nil
 }
