@@ -18,7 +18,7 @@ func GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 		err       error
 	)
 	ctx := r.Context()
-	Id, _ := strconv.Atoi(mux.Vars(r)["id"])
+	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
 	ReturnVal, err = service.UserWalletInfo(ctx, uint(Id))
 	if err != nil {
 		if err.Error() == "user not found" {
