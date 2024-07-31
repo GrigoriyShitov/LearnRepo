@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func OperationDeleteHandler(w http.ResponseWriter, r *http.Request) {
+func (h handler) OperationDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	Id, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)

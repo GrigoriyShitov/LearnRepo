@@ -1,7 +1,7 @@
 package storage
 
 type Operation struct {
-	OperationId       uint    `json:"operation_id"`
+	OperationId       uint    `json:"operation_id" gorm:"primaryKey"`
 	WalletId          uint    `json:"wallet_id"`
 	Amount            float64 `json:"amount"`
 	OperationType     string  `json:"operation_type"`

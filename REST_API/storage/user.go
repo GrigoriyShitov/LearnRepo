@@ -1,9 +1,10 @@
 package storage
 
 type User struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Admin    bool   `json:"admin"`
+	ID       uint     `json:"id" gorm:"primaryKey"`
+	Username string   `json:"username"`
+	Role     string   `json:"role"`
+	Wallets  []Wallet `gorm:"foreignKey:UserId;references:ID"`
 }
 
 type WalletsInfo struct {
@@ -12,11 +13,11 @@ type WalletsInfo struct {
 }
 type UserInfo struct {
 	User        *User
-	WalletsList []WalletsInfo
+	WalletsList []Wallet
 }
 
 var Users = []User{
-	{ID: 1, Username: "admin", Admin: true},
-	{ID: 2, Username: "user", Admin: false},
-	{ID: 3, Username: "guest", Admin: false},
+	{ID: 1, Username: "admin", Role: "admin"},
+	{ID: 2, Username: "user", Role: "user"},
+	{ID: 3, Username: "guest", Role: "user"},
 }

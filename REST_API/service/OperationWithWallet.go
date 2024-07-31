@@ -9,7 +9,7 @@ import (
 func NewOperationWithWallet(ctx context.Context, AddOperation *storage.NewOperation) error {
 
 	for _, wallet := range storage.Wallets {
-		if wallet.WalletId == AddOperation.WalletId && wallet.UserId == AddOperation.UserId {
+		if wallet.Id == AddOperation.WalletId && wallet.UserId == AddOperation.UserId {
 			err := storage.AddNewOperation(AddOperation)
 			if err != nil {
 				err = errors.New("cant make operation")

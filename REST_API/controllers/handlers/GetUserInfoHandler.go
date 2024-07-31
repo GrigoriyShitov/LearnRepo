@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
+func (h handler) GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	var (
 		ReturnVal *storage.UserInfo
@@ -19,7 +19,7 @@ func GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	)
 	ctx := r.Context()
 	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
-	ReturnVal, err = service.UserWalletInfo(ctx, uint(Id))
+	ReturnVal, err = service.UserWalletInfo(ctx, uint(Id), h.DB)
 	if err != nil {
 		if err.Error() == "user not found" {
 			w.WriteHeader(http.StatusNotFound)

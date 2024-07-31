@@ -10,11 +10,8 @@ func EditRoleService(ctx context.Context, whoChange uint, idUser uint, role stri
 	if err != nil {
 		return err
 	}
-	var isAdmin bool
-	if role == "admin" {
-		isAdmin = true
-	}
-	storage.EditRole(ctx, idUser, isAdmin)
+
+	storage.EditRole(ctx, idUser, role)
 
 	return nil
 
