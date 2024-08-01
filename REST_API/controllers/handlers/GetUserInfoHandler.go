@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"RestApi/service"
-	"RestApi/storage"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,13 +12,9 @@ import (
 
 func (h handler) GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
-	var (
-		ReturnVal *storage.UserInfo
-		err       error
-	)
 	ctx := r.Context()
 	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
-	ReturnVal, err = service.UserWalletInfo(ctx, uint(Id), h.DB)
+	ReturnVal, err := service.UserWalletInfo(ctx, uint(Id))
 	if err != nil {
 		if err.Error() == "user not found" {
 			w.WriteHeader(http.StatusNotFound)

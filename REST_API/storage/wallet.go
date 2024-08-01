@@ -1,27 +1,13 @@
 package storage
 
+import "gorm.io/gorm"
+
 type Wallet struct {
+	gorm.Model
 	Id     uint `json:"wallet_id" gorm:"primaryKey"`
 	UserId uint `json:"user_id"`
 }
-
-var Wallets = []Wallet{
-	{
-		Id:     1,
-		UserId: 1,
-	},
-
-	{
-		Id:     2,
-		UserId: 1,
-	},
-	{
-		Id:     3,
-		UserId: 2,
-	},
-
-	{
-		Id:     4,
-		UserId: 2,
-	},
+type WalletsInfo struct {
+	WalletInfo Wallet  `json:"wallet"`
+	Balance    float64 `json:"balance"`
 }

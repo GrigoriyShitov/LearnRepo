@@ -3,20 +3,18 @@ package service
 import (
 	"RestApi/storage"
 	"context"
-
-	"gorm.io/gorm"
 )
 
-func UserWalletInfo(ctx context.Context, id uint, db *gorm.DB) (*storage.UserInfo, error) {
+func UserWalletInfo(ctx context.Context, id uint) (*storage.UserInfo, error) {
 	var (
 		RetVal storage.UserInfo
 		err    error
 	)
-	RetVal.User, err = storage.GetUserInfo(ctx, id, db)
+	RetVal.User, err = storage.GetUserInfo(ctx, id)
 	if err != nil {
 		return nil, err
 	}
-	RetVal.WalletsList, err = GetWalletsInfo(ctx, id, db)
+	RetVal.WalletsList, err = FullWalletInfo(ctx, id)
 	if err != nil {
 		return &RetVal, err
 	}

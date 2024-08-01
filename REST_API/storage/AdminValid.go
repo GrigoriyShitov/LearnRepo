@@ -6,11 +6,15 @@ import (
 )
 
 func AdminValid(ctx context.Context, whoChange uint) error {
-	for _, user := range Users {
-		if user.ID == whoChange && user.Role == "admin" {
-			return nil
-		}
+
+	var user User
+	result := db.Find(&user, "ID = ?", whoChange)
+	if result.Error != nil {
+		return result.Error
 	}
-	err := errors.New("not admin")
+	if user.Role == "admin" {
+		return nil
+	}
+	err := errors.New("no access")
 	return err
 }

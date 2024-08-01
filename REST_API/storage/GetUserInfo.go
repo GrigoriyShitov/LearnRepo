@@ -2,11 +2,9 @@ package storage
 
 import (
 	"context"
-
-	"gorm.io/gorm"
 )
 
-func GetUserInfo(ctx context.Context, id uint, db *gorm.DB) (*User, error) { // to do (*storage.User, error)
+func GetUserInfo(ctx context.Context, id uint) (*User, error) { // to do (*storage.User, error)
 
 	var user *User
 	result := db.First(&user, id)

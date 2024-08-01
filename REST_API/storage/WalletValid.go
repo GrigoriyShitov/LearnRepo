@@ -6,12 +6,23 @@ import (
 )
 
 func WalletValid(ctx context.Context, userID uint, walletID uint) error {
-	for _, wallet := range Wallets {
-		if wallet.Id == walletID && wallet.UserId == userID {
-			return nil
-		}
+	var (
+		wallet Wallet
+		user   User
+	)
+
+	result := db.First(&wallet, walletID)
+	if result.Error != nil {
+		return result.Error
 	}
-	err := errors.New("it's not your wallet")
+	result = db.First(&user, userID)
+	if result.Error != nil {
+		return result.Error
+	}
+	if wallet.UserId == userID {
+		return nil
+	}
+	err := errors.New("no access")
 	return err
 
 }

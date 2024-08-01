@@ -16,13 +16,13 @@ func (h handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	Id, _ := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
 
-	AddOperation.UserId = uint(Id)
+	AddOperation.IdUser = uint(Id)
 	idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
 	if err != nil {
 		w.Write([]byte("Hello, World!"))
 		return
 	}
-	AddOperation.WalletId = uint(idWallet)
+	AddOperation.IdWallet = uint(idWallet)
 	AddOperation.Type = mux.Vars(r)["type"]
 	if AddOperation.Type != "deposit" && AddOperation.Type != "withdraw" {
 		w.Write([]byte("Hello, World!"))
@@ -35,4 +35,5 @@ func (h handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))
 		return
 	}
+	w.Write([]byte("Operation added successfully"))
 }

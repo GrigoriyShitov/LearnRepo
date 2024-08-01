@@ -6,10 +6,9 @@ import (
 
 func GetOperationOnWallet(ctx context.Context, WalletId uint) ([]Operation, error) {
 	retOps := make([]Operation, 0)
-	for _, operations := range Operations {
-		if operations.WalletId == WalletId {
-			retOps = append(retOps, operations)
-		}
+	result := db.Find(&retOps, "wallet_id = ?", WalletId)
+	if result.Error != nil {
+		return nil, result.Error
 	}
 	return retOps, nil
 }
