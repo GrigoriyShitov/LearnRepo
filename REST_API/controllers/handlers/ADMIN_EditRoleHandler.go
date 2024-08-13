@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (h handler) ADMIN_EditRoleHandler(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ADMIN_EditRoleHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	whoChange, err := strconv.ParseUint(mux.Vars(r)["whoChange"], 10, 64)
 	if err != nil {

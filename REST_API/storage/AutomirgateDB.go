@@ -7,16 +7,16 @@ import (
 )
 
 func AutomigrateDB(db *gorm.DB) *gorm.DB {
-	err := db.AutoMigrate(&User{})
+	err := db.AutoMigrate(User{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.AutoMigrate(&Wallet{})
+	err = db.AutoMigrate(Wallet{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = db.AutoMigrate(&Operation{})
+	err = db.AutoMigrate(Operation{})
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (h handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
+func (h *handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		AddOperation storage.NewOperation
 	)

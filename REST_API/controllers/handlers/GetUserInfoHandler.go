@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func (h handler) GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
