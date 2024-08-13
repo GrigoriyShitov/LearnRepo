@@ -10,8 +10,10 @@ import (
 func main() {
 
 	h := handlers.HandlerInit()
-	h.Router.HandleFunc("/wallets/users", h.HomeHandler)
-	h.Router.Handle("/wallets/users/{idUser:[0-9]+}", controllers.JWTmiddleware(http.HandlerFunc(h.GetUserInfoHandler))).Methods(http.MethodGet)
+	h.Router.HandleFunc("/wallets/users", h.HomeHandler)                                                                                                   // home page
+	h.Router.Handle("/wallets/users/{idUser:[0-9]+}", controllers.JWTmiddleware(http.HandlerFunc(h.GetUserInfoHandler))).Methods(http.MethodGet)           // get user info
+	h.Router.Handle("/wallets/users/{idUser:[0-9]+}/{name}", controllers.JWTmiddleware(http.HandlerFunc(h.CreateNewUserHandler))).Methods(http.MethodPost) // create new user
+	h.Router.Handle("/wallets/users/{idUser:[0-9]+}", controllers.JWTmiddleware(http.HandlerFunc(h.CreateNewWalletHandler))).Methods(http.MethodPost)      // create new wallet
 	h.Router.HandleFunc("/wallets/users/{idUser:[0-9]+}/{idWallet:[0-9]+}", h.OperationListHandler).Methods(http.MethodGet)
 	h.Router.HandleFunc("/wallets/users/{idUser:[0-9]+}/{idWallet:[0-9]+}/{idOperation:[0-9]+}", h.OperationDeleteHandler).Methods(http.MethodDelete)
 	h.Router.HandleFunc("/wallets/users/{whoChange:[0-9]+}/{idUser:[0-9]+}/{role:admin|user}", h.ADMIN_EditRoleHandler).Methods(http.MethodPatch)
