@@ -25,6 +25,7 @@ COPY --from=builder /app/main .
 
 # Открываем порт 8080
 EXPOSE 8080
+EXPOSE 5432
 
 # Запускаем приложение
 CMD ["./main"]
