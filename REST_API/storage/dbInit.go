@@ -1,6 +1,7 @@
 package storage
 
 import (
+	secret "RestApi/.env"
 	"log"
 
 	"gorm.io/driver/postgres"
@@ -10,9 +11,8 @@ import (
 var db *gorm.DB
 
 func dbInit() {
-	dsn := "host=localhost user=grish password=1129 dbname=restapi port=5432 sslmode=disable"
 	var err error
-	db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	db, err = gorm.Open(postgres.Open(secret.Dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalln(err)
 	} else {
