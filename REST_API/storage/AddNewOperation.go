@@ -1,12 +1,12 @@
 package storage
 
-func AddNewOperation(AddOperation *NewOperation) error {
+func AddNewOperation(IdUser uint, IdWallet uint, Type string, Amount float64, Category string) error {
 	var operationToAdd Operation
 
-	operationToAdd.WalletId = AddOperation.IdWallet
-	operationToAdd.Amount = AddOperation.Amount
-	operationToAdd.OperationType = AddOperation.Type
-	operationToAdd.OperationCategory = AddOperation.Category
+	operationToAdd.WalletId = IdWallet
+	operationToAdd.Amount = Amount
+	operationToAdd.OperationType = Type
+	operationToAdd.OperationCategory = Category
 	// Operations = append(Operations, operationToAdd)
 	result := db.Create(&operationToAdd)
 	if result.Error != nil {

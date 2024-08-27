@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"RestApi/service"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -29,11 +28,7 @@ func (h *handler) OperationListHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Op error: " + err.Error()))
 		return
 	}
-	data, err := json.MarshalIndent(Operations, "", "    ")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println(string(data))
-	w.Write([]byte(data))
+
+	fmt.Println(string(Operations))
+	w.Write([]byte(Operations))
 }

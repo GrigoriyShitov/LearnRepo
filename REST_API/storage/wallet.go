@@ -7,7 +7,3 @@ type Wallet struct {
 	Id     uint `json:"wallet_id" gorm:"primaryKey"`
 	UserId uint `json:"user_id"`
 }
-type WalletsInfo struct {
-	WalletInfo Wallet  `json:"wallet"`
-	Balance    float64 `json:"balance"`
-}

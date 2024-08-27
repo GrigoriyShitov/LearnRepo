@@ -9,8 +9,3 @@ type User struct {
 	Role     string `json:"role"`
 	//Wallets  []Wallet `gorm:"foreignKey:UserId"`
 }
-
-type UserInfo struct {
-	User        *User
-	WalletsList []WalletsInfo
-}

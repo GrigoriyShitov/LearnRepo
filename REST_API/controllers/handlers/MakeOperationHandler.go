@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"RestApi/service"
-	"RestApi/storage"
 	"net/http"
 	"strconv"
 
@@ -10,30 +9,33 @@ import (
 )
 
 func (h *handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
-	var (
-		AddOperation storage.NewOperation
-	)
-	ctx := r.Context()
-	Id, _ := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
 
-	AddOperation.IdUser = uint(Id)
+	ctx := r.Context()
+	idUser, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
 	idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
 	if err != nil {
-		w.Write([]byte("Hello, World!"))
+		w.Write([]byte(err.Error()))
 		return
 	}
-	AddOperation.IdWallet = uint(idWallet)
-	AddOperation.Type = mux.Vars(r)["type"]
-	if AddOperation.Type != "deposit" && AddOperation.Type != "withdraw" {
-		w.Write([]byte("Hello, World!"))
+	Type := mux.Vars(r)["type"]
+	if Type != "deposit" && Type != "withdraw" {
+		w.Write([]byte("Wrong operation type"))
 		return
 	}
-	AddOperation.Amount, _ = strconv.ParseFloat(mux.Vars(r)["amount"], 64)
-	AddOperation.Category = mux.Vars(r)["category"]
-	err = service.NewOperationWithWallet(ctx, &AddOperation)
+	Amount, err := strconv.ParseFloat(mux.Vars(r)["amount"], 64)
 	if err != nil {
-		w.Write([]byte("Hello, World!"))
+		w.Write([]byte(err.Error()))
 		return
 	}
-	w.Write([]byte("Operation added successfully"))
+	Category := mux.Vars(r)["category"]
+	data, err := service.NewOperationWithWallet(ctx, uint(idUser), uint(idWallet), Type, Amount, Category)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Write(data)
 }

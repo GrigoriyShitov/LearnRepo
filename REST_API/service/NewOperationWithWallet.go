@@ -5,17 +5,17 @@ import (
 	"context"
 )
 
-func NewOperationWithWallet(ctx context.Context, AddOperation *storage.NewOperation) error {
+func NewOperationWithWallet(ctx context.Context, idUser uint, idWallet uint, Type string, Amount float64, Category string) ([]byte, error) {
 
-	err := storage.WalletValid(ctx, AddOperation.IdUser, AddOperation.IdWallet)
+	err := storage.WalletValid(ctx, idUser, idWallet)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = storage.AddNewOperation(AddOperation)
+	err = storage.AddNewOperation(idUser, idWallet, Type, Amount, Category)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	return nil
+	data := []byte("Operation added")
+	return data, nil
 }

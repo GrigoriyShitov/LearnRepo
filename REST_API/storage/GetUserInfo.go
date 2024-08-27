@@ -4,12 +4,12 @@ import (
 	"context"
 )
 
-func GetUserInfo(ctx context.Context, id uint) (*User, error) { // to do (*storage.User, error)
+func GetUserInfo(ctx context.Context, id uint) (string, string, error) { // to do (*storage.User, error)
 
 	var user *User
 	result := db.First(&user, id)
 	if result.Error != nil {
-		return nil, result.Error //nil
+		return "", "", result.Error //nil
 
 	}
 	// for _, user := range Users {
@@ -17,6 +17,6 @@ func GetUserInfo(ctx context.Context, id uint) (*User, error) { // to do (*stora
 	// 		return &user, nil // to do &user
 	// 	}
 	// }
-	return user, nil
+	return user.Username, user.Role, nil
 
 }
