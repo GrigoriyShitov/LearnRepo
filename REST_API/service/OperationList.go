@@ -12,12 +12,9 @@ type OperationToOut struct {
 	OperationCategory string
 }
 
-func OperationList(ctx context.Context, id uint, idWallet uint) ([]byte, error) {
-	err := storage.WalletValid(ctx, id, idWallet)
-	if err != nil {
-		return nil, err
-	}
-	ListOfOperations, _ := storage.GetOpList(ctx, idWallet)
+func OperationList(ctx context.Context, id uint, WalletNum uint) ([]byte, error) {
+
+	ListOfOperations, _ := storage.GetOpList(ctx, id, WalletNum)
 
 	data := ListToOut(ctx, ListOfOperations)
 	Output, err := json.MarshalIndent(data, "", "    ")

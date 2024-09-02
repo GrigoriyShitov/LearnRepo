@@ -7,5 +7,4 @@ type User struct {
 	ID       uint   `json:"id" gorm:"primaryKey"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
-	//Wallets  []Wallet `gorm:"foreignKey:UserId"`
 }

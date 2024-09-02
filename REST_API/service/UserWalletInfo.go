@@ -12,6 +12,9 @@ func UserWalletInfo(ctx context.Context, id uint) ([]byte, error) {
 		return nil, err
 	}
 	WalletsList, err := FullWalletInfo(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 
 	data, err := UserInfoToOut(ctx, Username, Role, WalletsList)
 	if err != nil {

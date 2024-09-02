@@ -1,21 +1,18 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
 	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (h *handler) CreateNewWalletHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
-
-	err := service.CreateNewWallet(ctx, uint(Id))
+	id := ctx.Value(middleware.UserId).(uint)
+	err := service.CreateNewWallet(ctx, id)
 
 	if err != nil {
 		log.Println(err)

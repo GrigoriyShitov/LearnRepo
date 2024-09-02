@@ -2,9 +2,8 @@ package storage
 
 import "context"
 
-func CreateNewUser(ctx context.Context, id uint, name string) error {
+func CreateNewUser(ctx context.Context, name string) error {
 	var user User
-	user.ID = id
 	user.Username = name
 	user.Role = "user"
 	err := db.Create(&user)

@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -10,9 +12,9 @@ import (
 
 func (h *handler) ADMIN_EditRoleHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	whoChange, err := strconv.ParseUint(mux.Vars(r)["whoChange"], 10, 64)
-	if err != nil {
-		w.Write([]byte("Parse whoChange error: " + err.Error()))
+	whoChange, ok := ctx.Value(middleware.UserId).(uint)
+	if !ok {
+		log.Println("sueta")
 		return
 	}
 	Id, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)

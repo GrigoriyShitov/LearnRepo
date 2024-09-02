@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
 	"fmt"
 	"net/http"
@@ -12,18 +13,14 @@ import (
 func (h *handler) OperationListHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	Id, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
-	if err != nil {
-		w.Write([]byte("Parse Id error: " + err.Error()))
-		return
-	}
-	idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
+	id := ctx.Value(middleware.UserId).(uint)
+	WalletNum, err := strconv.ParseUint(mux.Vars(r)["WalletNum"], 10, 64)
 	if err != nil {
 		w.Write([]byte("Parse idWallet error: " + err.Error()))
 		return
 	}
 
-	Operations, err := service.OperationList(ctx, uint(Id), uint(idWallet))
+	Operations, err := service.OperationList(ctx, id, uint(WalletNum))
 	if err != nil {
 		w.Write([]byte("Op error: " + err.Error()))
 		return

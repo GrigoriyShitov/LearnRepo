@@ -5,11 +5,8 @@ import (
 	"context"
 )
 
-func CreateNewUser(ctx context.Context, id uint, name string) error {
-	err := storage.CheckUserExist(ctx, id)
+func CreateNewUser(ctx context.Context, name string) error {
 
-	if err != nil {
-		err = storage.CreateNewUser(ctx, id, name)
-	}
+	err := storage.CreateNewUser(ctx, name)
 	return err
 }

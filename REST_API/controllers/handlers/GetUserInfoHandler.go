@@ -1,28 +1,27 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
 	"fmt"
+	"log"
 	"net/http"
-	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (h *handler) GetUserInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	Id, _ := strconv.Atoi(mux.Vars(r)["idUser"])
-	data, err := service.UserWalletInfo(ctx, uint(Id))
+	id, ok := ctx.Value(middleware.UserId).(uint)
+	if !ok {
+		log.Println("sueta")
+		return
+	}
+	data, err := service.UserWalletInfo(ctx, uint(id))
 	if err != nil {
-		if err.Error() == "user not found" {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(err.Error()))
+		w.Write([]byte(err.Error()))
+		if data == nil {
 			return
-		} else if err.Error() == "no wallets" {
-			w.Write([]byte(err.Error()))
 		}
-
 	}
 	fmt.Println(string(data))
 	w.Write([]byte(data))

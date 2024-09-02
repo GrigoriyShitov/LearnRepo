@@ -5,24 +5,24 @@ import (
 	"errors"
 )
 
-func WalletValid(ctx context.Context, userID uint, walletID uint) error {
+func WalletValid(ctx context.Context, userID uint, WalletNum uint) ([]Wallet, error) {
 	var (
-		wallet Wallet
-		user   User
+		user User
 	)
+	result := db.First(&user, userID)
+	if result.Error != nil {
+		return nil, result.Error
+	}
 
-	result := db.First(&wallet, walletID)
+	Wallets := []Wallet{}
+	result = db.Find(&Wallets, "user_id = ?", userID)
 	if result.Error != nil {
-		return result.Error
+		return nil, result.Error
 	}
-	result = db.First(&user, userID)
-	if result.Error != nil {
-		return result.Error
+	if len(Wallets) == 0 {
+		return nil, errors.New("no wallets")
 	}
-	if wallet.UserId == userID {
-		return nil
-	}
-	err := errors.New("no access")
-	return err
+
+	return Wallets, nil
 
 }

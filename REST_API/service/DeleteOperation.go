@@ -7,7 +7,7 @@ import (
 
 func DeleteOperation(ctx context.Context, idUser uint, idWallet uint, idOperation uint) error {
 
-	err := storage.WalletValid(ctx, idUser, idWallet)
+	err := storage.OpCheckAccess(ctx, idUser, idWallet, idOperation)
 	if err != nil {
 
 		return err

@@ -1,38 +1,34 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (h *handler) MakeOperationHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	idUser, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
+	userID := ctx.Value(middleware.UserId).(uint)
+
+	WalletNum, err := strconv.ParseUint(r.FormValue("WalletNum"), 10, 64)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return
-	}
-	Type := mux.Vars(r)["type"]
+	Type := r.FormValue("Type")
 	if Type != "deposit" && Type != "withdraw" {
 		w.Write([]byte("Wrong operation type"))
 		return
 	}
-	Amount, err := strconv.ParseFloat(mux.Vars(r)["amount"], 64)
+	Amount, err := strconv.ParseFloat(r.FormValue("Amount"), 64)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	Category := mux.Vars(r)["category"]
-	data, err := service.NewOperationWithWallet(ctx, uint(idUser), uint(idWallet), Type, Amount, Category)
+	Category := r.FormValue("Category")
+	data, err := service.NewOperationWithWallet(ctx, userID, uint(WalletNum), Type, Amount, Category)
 	if err != nil {
 		w.Write([]byte(err.Error()))
 		return

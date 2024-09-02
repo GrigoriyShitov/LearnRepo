@@ -1,33 +1,39 @@
 package handlers
 
 import (
+	middleware "RestApi/controllers/midleware"
 	"RestApi/service"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func (h *handler) OperationDeleteHandler(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
-	Id, err := strconv.ParseUint(mux.Vars(r)["idUser"], 10, 64)
-	if err != nil {
-		w.Write([]byte("Parse Id error: " + err.Error()))
-		return
-	}
-	idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
+	id := ctx.Value(middleware.UserId).(uint)
+	// idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
+	// if err != nil {
+	// 	w.Write([]byte("Parse idWallet error: " + err.Error()))
+	// 	return
+	// }
+
+	// idOperation, err := strconv.ParseUint(mux.Vars(r)["idOperation"], 10, 64)
+	// if err != nil {
+	// 	w.Write([]byte("Parse idOperation error: " + err.Error()))
+	// 	return
+	// }
+
+	idWallet, err := strconv.ParseUint(r.FormValue("idWallet"), 10, 64)
 	if err != nil {
 		w.Write([]byte("Parse idWallet error: " + err.Error()))
 		return
 	}
-
-	idOperation, err := strconv.ParseUint(mux.Vars(r)["idOperation"], 10, 64)
+	idOperation, err := strconv.ParseUint(r.FormValue("idOperation"), 10, 64)
 	if err != nil {
 		w.Write([]byte("Parse idOperation error: " + err.Error()))
 		return
 	}
-	err = service.DeleteOperation(ctx, uint(Id), uint(idWallet), uint(idOperation))
+	err = service.DeleteOperation(ctx, id, uint(idWallet), uint(idOperation))
 	if err != nil {
 		w.Write([]byte("Delete error: " + err.Error()))
 		return
