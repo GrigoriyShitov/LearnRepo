@@ -42,6 +42,7 @@ func JWTmiddleware(next http.Handler) http.Handler {
 				next.ServeHTTP(w, r)
 			}
 		} else {
+			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprintf(w, "An authorization header is required.")
 		}
 	})

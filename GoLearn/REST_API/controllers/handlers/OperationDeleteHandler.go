@@ -11,17 +11,6 @@ func (h *handler) OperationDeleteHandler(w http.ResponseWriter, r *http.Request)
 
 	ctx := r.Context()
 	id := ctx.Value(middleware.UserId).(uint)
-	// idWallet, err := strconv.ParseUint(mux.Vars(r)["idWallet"], 10, 64)
-	// if err != nil {
-	// 	w.Write([]byte("Parse idWallet error: " + err.Error()))
-	// 	return
-	// }
-
-	// idOperation, err := strconv.ParseUint(mux.Vars(r)["idOperation"], 10, 64)
-	// if err != nil {
-	// 	w.Write([]byte("Parse idOperation error: " + err.Error()))
-	// 	return
-	// }
 
 	idWallet, err := strconv.ParseUint(r.FormValue("idWallet"), 10, 64)
 	if err != nil {
