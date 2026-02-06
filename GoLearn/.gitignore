@@ -1,3 +1,4 @@
 .vscode/
 stepik/3. maps,files,etc/files/task/
 REST_API/.env
+*.idea/
