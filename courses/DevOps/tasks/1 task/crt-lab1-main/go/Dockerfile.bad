@@ -1,0 +1,7 @@
+FROM golang:latest
+
+COPY . .
+RUN go build -o /opt/app ./app
+
+EXPOSE 8080
+CMD ["/opt/app"]

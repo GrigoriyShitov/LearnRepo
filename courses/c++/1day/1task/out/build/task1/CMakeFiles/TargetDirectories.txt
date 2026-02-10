@@ -1,0 +1,3 @@
+C:/Users/Григорий/Desktop/courses/1task/out/build/task1/CMakeFiles/task1.dir
+C:/Users/Григорий/Desktop/courses/1task/out/build/task1/CMakeFiles/edit_cache.dir
+C:/Users/Григорий/Desktop/courses/1task/out/build/task1/CMakeFiles/rebuild_cache.dir

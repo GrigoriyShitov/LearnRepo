@@ -1,0 +1,17 @@
+FROM golang:1.25-alpine AS builder
+
+WORKDIR /src
+COPY go.mod .
+RUN go mod download
+COPY .. .
+RUN go build -trimpath -ldflags="-s -w" -o /out/app ./app
+
+
+FROM scratch AS runtime
+
+USER 10001
+WORKDIR /opt
+COPY --from=builder /out/app /opt/app
+
+EXPOSE 8080
+ENTRYPOINT ["/opt/app"]

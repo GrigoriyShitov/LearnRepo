@@ -1,0 +1,9 @@
+FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y build-essential
+
+COPY . .
+RUN g++ -O2 -std=c++17 -pthread app/server.cpp -o server
+
+EXPOSE 8888
+CMD ["./server"]

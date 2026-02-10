@@ -1,0 +1,8 @@
+[
+{
+  "directory": "C:/Users/Григорий/Desktop/courses/1task/build",
+  "command": "C:\\msys64\\ucrt64\\bin\\g++.exe -g -o CMakeFiles\\task1.dir\\src\\hello.cpp.obj -c C:\\Users\\Григорий\\Desktop\\courses\\1task\\src\\hello.cpp",
+  "file": "C:\\Users\\Григорий\\Desktop\\courses\\1task\\src\\hello.cpp",
+  "output": "CMakeFiles\\task1.dir\\src\\hello.cpp.obj"
+}
+]

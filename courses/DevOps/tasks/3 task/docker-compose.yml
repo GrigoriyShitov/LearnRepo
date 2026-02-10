@@ -1,0 +1,28 @@
+services:
+  my-app-1:
+    build: .
+    image: my-python-app
+    container_name: my-app-1
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8001:8000"
+
+  my-app-2:
+    build: .
+    image: my-python-app
+    container_name: my-app-2
+    depends_on:
+      - rabbitmq
+    ports:
+      - "8002:8000"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "5672:5672"
+      - "15672:15672"

@@ -1,0 +1,11 @@
+services:
+  my-app:
+    build: .
+    ports:
+      - "8000:8000"
+
+  init:
+    image: curlimages/curl:latest
+    command: sh -c 'sleep 10; curl -f http://my-app:8000/healthy && exit 0; exit 1'
+    depends_on:
+      - my-app

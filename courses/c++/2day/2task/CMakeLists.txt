@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.10.0)
+project(task2 VERSION 0.1.0 LANGUAGES C CXX)
+
+add_executable(task2 src/main.cpp src/task2.cpp src/task3.cpp src/task4.cpp)
+
