@@ -2,6 +2,7 @@
 package container
 
 import (
+	"awesome-backend/pkg/redis"
 	"awesome-backend/pkg/rmq"
 	"context"
 	"net/http"
@@ -61,8 +62,11 @@ type (
 		loader     jwt.Loader
 		loaderOnce sync.Once
 
-		rmqHandler     rmq.RabbitHandler
-		rmqHandlerSync sync.Once
+		rmqHandler     rmq.Handler
+		rmqHandlerOnce sync.Once
+
+		redisHandler     redis.Handler
+		redisHandlerOnce sync.Once
 
 		service     service.Service
 		serviceOnce sync.Once
@@ -83,12 +87,14 @@ func New(appName string) Container {
 
 	// in order to start (db, jwt, server)
 	c.registerStarter("rabbitMQ", c.RabbitHandler())
+	c.registerStarter("redis", c.RedisHandler())
 	//c.registerStarter("migrator", c.Migrator())
 	//c.registerStarter("db", c.DBClient())
 	//c.registerStarter("auth", c.Jwt())
 
 	//c.registerStopper("db", c.DBClient())
 	//c.registerStopper("auth", c.Jwt())
+	c.registerStopper("redis", c.RedisHandler())
 	c.registerStopper("rabbitMQ", c.RabbitHandler())
 	return c
 }
@@ -198,9 +204,9 @@ func (c *containerImpl) Migrator() *migrator.Migrator {
 	return c.migrator
 }
 
-func (c *containerImpl) RabbitHandler() rmq.RabbitHandler {
+func (c *containerImpl) RabbitHandler() rmq.Handler {
 	if c.rmqHandler == nil {
-		c.rmqHandlerSync.Do(func() {
+		c.rmqHandlerOnce.Do(func() {
 			config.InitRabbitMQ()
 			c.rmqHandler = rmq.NewRabbitMqHandler(
 				rmq.InitHandler(
@@ -213,4 +219,19 @@ func (c *containerImpl) RabbitHandler() rmq.RabbitHandler {
 		})
 	}
 	return c.rmqHandler
+}
+
+func (c *containerImpl) RedisHandler() redis.Handler {
+	if c.redisHandler == nil {
+		c.redisHandlerOnce.Do(func() {
+			config.InitRedis()
+			c.redisHandler = redis.NewRabbitMqHandler(
+				redis.InitHandler(
+					config.Redis.Host,
+					config.Redis.Port,
+					config.Redis.Password,
+					config.Redis.DB))
+		})
+	}
+	return c.redisHandler
 }

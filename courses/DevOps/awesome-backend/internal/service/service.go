@@ -15,13 +15,13 @@ type (
 
 	serviceImpl struct {
 		s          store.Store
-		rmqHandler rmq.RabbitHandler
+		rmqHandler rmq.Handler
 	}
 )
 
 func New(
 	s store.Store,
-	rmqHandler rmq.RabbitHandler,
+	rmqHandler rmq.Handler,
 ) Service {
 	return &serviceImpl{
 		s:          s,

@@ -10,7 +10,7 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type RabbitHandler interface {
+type Handler interface {
 	GetItems(ctx *fiber.Ctx, name string) (interface{}, error)
 	Stop(ctx context.Context) error
 	Start(ctx context.Context) error
@@ -21,8 +21,8 @@ func InitHandler(user, password, host, port string) string {
 	return fmt.Sprintf("amqp://%s:%s@%s:%s/", user, password, host, port) //nolint:nosprintfhostport
 }
 
-func NewRabbitMqHandler(dns string) RabbitHandler {
-	if dns == "nil" {
+func NewRabbitMqHandler(dns string) Handler {
+	if dns == "" {
 		panic("nil amqp handler")
 	}
 	return &rabbitHandler{dsn: dns}

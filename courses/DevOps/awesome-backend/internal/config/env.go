@@ -13,6 +13,7 @@ var (
 	Postgres postgresConfig
 	Client   clientConfig
 	RabbitMq rabbitmqConfig
+	Redis    redisConfig
 )
 
 type (
@@ -42,10 +43,16 @@ type (
 		CanImpersonate bool   `env:"CAN_IMPERSONATE" envDefault:"true"`
 	}
 	rabbitmqConfig struct {
-		Host     string `env:"RABBITMQ_HOST"     envDefault:"localhost"`
+		Host     string `env:"RABBITMQ_HOST"     envDefault:"rabbitmq"`
 		Port     string `env:"RABBITMQ_PORT"     envDefault:"5672"`
 		User     string `env:"RABBITMQ_USER"     envDefault:"guest"`
 		Password string `env:"RABBITMQ_PASSWORD" envDefault:"guest"`
+	}
+	redisConfig struct {
+		Host     string `env:"REDIS_HOST"         envDefault:"redis"`
+		Port     string `env:"REDIS_PORT"        envDefault:"6379"`
+		Password string `env:"REDIS_PASSWORD" envDefault:""`
+		DB       int    `env:"REDIS_DB" envDefault:"0"`
 	}
 )
 
@@ -79,5 +86,11 @@ func InitJwt() {
 func InitRabbitMQ() {
 	if err := env.Parse(&RabbitMq); err != nil {
 		panic(fmt.Errorf("failed to parse rabbitmq config: %w", err))
+	}
+}
+
+func InitRedis() {
+	if err := env.Parse(&Redis); err != nil {
+		panic(fmt.Errorf("failed to parse redis config: %w", err))
 	}
 }
