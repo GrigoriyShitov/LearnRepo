@@ -16,10 +16,10 @@
 ## Technical Highlights
 
 ### Successful healthcheck 
-![Successful healthcheck](images/Healthcheck%20200.png)
+![Successful healthcheck](https://github.com/GrigoriyShitov/LearnRepo/blob/master/images/Healthcheck%20200.png)
 
 ### Healthcheck without rabbitMQ
-![Successful healthcheck](images/Healthcheck%20without%20cache%20and%20RabbitMQ.png)
+![Successful healthcheck](https://github.com/GrigoriyShitov/LearnRepo/blob/master/images/Healthcheck%20with%20unavailabe%20RabbitMQ.png)
 
 ### Healthcheck unavailable service
-![Successful healthcheck](images/Healthcheck%20with%20unavailabe%20RabbitMQ.png)
+![Unsuccessful healthcheck](https://github.com/GrigoriyShitov/LearnRepo/blob/master/images/Healthcheck%20without%20cache%20and%20RabbitMQ.png)
