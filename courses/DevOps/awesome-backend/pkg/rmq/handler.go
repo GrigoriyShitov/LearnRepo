@@ -3,18 +3,19 @@ package rmq
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"git.itmo.su/go-modules/log/v4"
-	"github.com/gofiber/fiber/v2"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type Handler interface {
-	GetItems(ctx *fiber.Ctx, name string) (interface{}, error)
+	Ping(ctx context.Context) error
 	Stop(ctx context.Context) error
 	Start(ctx context.Context) error
-	SendData(c *fiber.Ctx, query string, body string) error
+	GetItems(ctx context.Context, queueName string) (interface{}, error)
+	SendData(ctx context.Context, queueName string, body string) error
 }
 
 func InitHandler(user, password, host, port string) string {
@@ -33,7 +34,26 @@ type rabbitHandler struct {
 	conn *amqp.Connection
 }
 
-func (r *rabbitHandler) SendData(c *fiber.Ctx, query string, body string) error {
+func (r *rabbitHandler) Ping(ctx context.Context) error {
+	url := fmt.Sprintf("%s/api/aliveness-test/%s", "http://rabbitmq:15672", "%2f")
+	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req.SetBasicAuth("guest", "guest")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("http status %d", resp.StatusCode)
+	}
+
+	// Ответ должен быть {"status":"ok"}
+	return nil
+}
+
+func (r *rabbitHandler) SendData(ctx context.Context, query string, body string) error {
 	ch, err := r.conn.Channel()
 	if err != nil {
 		return err
@@ -49,7 +69,7 @@ func (r *rabbitHandler) SendData(c *fiber.Ctx, query string, body string) error 
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	err = ch.PublishWithContext(ctx,
@@ -67,7 +87,7 @@ func (r *rabbitHandler) SendData(c *fiber.Ctx, query string, body string) error 
 	return nil
 }
 
-func (r *rabbitHandler) GetItems(ctx *fiber.Ctx, queueName string) (interface{}, error) {
+func (r *rabbitHandler) GetItems(ctx context.Context, queueName string) (interface{}, error) {
 	ch, err := r.conn.Channel()
 	defer ch.Close()
 	if err != nil {
@@ -83,7 +103,7 @@ func (r *rabbitHandler) GetItems(ctx *fiber.Ctx, queueName string) (interface{},
 	)
 
 	msgs, err := ch.ConsumeWithContext(
-		ctx.Context(),
+		ctx,
 		q.Name, // queue
 		"",     // consumer
 		true,   // auto-ack
@@ -99,9 +119,10 @@ func (r *rabbitHandler) GetItems(ctx *fiber.Ctx, queueName string) (interface{},
 		}
 	}()
 	for {
-		timeoutContext, cancel := context.WithTimeout(ctx.Context(), 500*time.Millisecond)
+		timeoutContext, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
 		select {
 		case <-timeoutContext.Done():
+			cancel()
 			return data, nil
 		case d := <-msgs:
 			data = append(data, string(d.Body))
@@ -109,6 +130,7 @@ func (r *rabbitHandler) GetItems(ctx *fiber.Ctx, queueName string) (interface{},
 			continue
 		}
 	}
+
 }
 
 func (r *rabbitHandler) Start(ctx context.Context) error {

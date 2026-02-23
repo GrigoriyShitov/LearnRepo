@@ -2,7 +2,7 @@
 package container
 
 import (
-	"awesome-backend/pkg/redis"
+	"awesome-backend/pkg/cache"
 	"awesome-backend/pkg/rmq"
 	"context"
 	"net/http"
@@ -65,7 +65,7 @@ type (
 		rmqHandler     rmq.Handler
 		rmqHandlerOnce sync.Once
 
-		redisHandler     redis.Handler
+		redisHandler     cache.Handler
 		redisHandlerOnce sync.Once
 
 		service     service.Service
@@ -157,7 +157,7 @@ func (c *containerImpl) Server() *server.Server {
 func (c *containerImpl) Service() service.Service {
 	if c.service == nil {
 		c.serviceOnce.Do(func() {
-			c.service = service.New(c.Store(), c.RabbitHandler())
+			c.service = service.New(c.Store(), c.RabbitHandler(), c.RedisHandler())
 		})
 	}
 	return c.service
@@ -221,16 +221,18 @@ func (c *containerImpl) RabbitHandler() rmq.Handler {
 	return c.rmqHandler
 }
 
-func (c *containerImpl) RedisHandler() redis.Handler {
+func (c *containerImpl) RedisHandler() cache.Handler {
 	if c.redisHandler == nil {
 		c.redisHandlerOnce.Do(func() {
 			config.InitRedis()
-			c.redisHandler = redis.NewRabbitMqHandler(
-				redis.InitHandler(
+			c.redisHandler = cache.NewRedisHandler(
+				cache.InitHandler(
 					config.Redis.Host,
 					config.Redis.Port,
 					config.Redis.Password,
-					config.Redis.DB))
+					config.Redis.DB,
+				),
+				time.Duration(config.Redis.CacheTime)*time.Second)
 		})
 	}
 	return c.redisHandler

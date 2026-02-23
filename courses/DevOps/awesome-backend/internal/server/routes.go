@@ -10,9 +10,7 @@ import (
 func (s *Server) initRoutes() {
 	// healthcheck endpoint
 	app := s.app.Group("/awesome-backend")
-	app.Get("/healthcheck", func(c *fiber.Ctx) error {
-		return c.SendStatus(http.StatusOK)
-	})
+	app.Get("/healthcheck", s.HealthCheck)
 
 	v1 := app.Group("/api/v1")
 	swaga.Setup(v1, swaga.Config{
@@ -21,6 +19,13 @@ func (s *Server) initRoutes() {
 		Title:     "awesome-backend API",
 	}, swaga.WithSpecFile("./docs/swagger.json"),
 	)
-	//rabbitMQ routes
 	s.RmqRoutes(v1)
+	s.RedisRoutes(v1)
+}
+
+func (s *Server) HealthCheck(c *fiber.Ctx) error {
+	if err := s.svc.Ping(c.Context()); err != nil {
+		return c.SendStatus(http.StatusServiceUnavailable)
+	}
+	return c.SendStatus(http.StatusOK)
 }

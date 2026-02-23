@@ -49,10 +49,11 @@ type (
 		Password string `env:"RABBITMQ_PASSWORD" envDefault:"guest"`
 	}
 	redisConfig struct {
-		Host     string `env:"REDIS_HOST"         envDefault:"redis"`
-		Port     string `env:"REDIS_PORT"        envDefault:"6379"`
-		Password string `env:"REDIS_PASSWORD" envDefault:""`
-		DB       int    `env:"REDIS_DB" envDefault:"0"`
+		Host      string `env:"REDIS_HOST"         envDefault:"redis"`
+		Port      string `env:"REDIS_PORT"        envDefault:"6379"`
+		Password  string `env:"REDIS_PASSWORD" envDefault:""`
+		DB        int    `env:"REDIS_DB" envDefault:"0"`
+		CacheTime int    `env:"REDIS_CACHE_TIME" envDefault:"3600"`
 	}
 )
 

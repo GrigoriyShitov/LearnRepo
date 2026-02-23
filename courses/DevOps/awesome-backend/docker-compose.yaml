@@ -1,6 +1,6 @@
 services:
-  app:
-    container_name: awesome-backend-app
+  app-1:
+    container_name: awesome-backend-app-1
     env_file:
       - .env
     build:
@@ -10,14 +10,62 @@ services:
       rabbitmq:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "8081:8080"
     networks:
       - awesome-backend-network
     healthcheck:
-      test: [ "CMD", "curl","-f", "http://app:8080/awesome-backend/healthcheck" ]
+      test: [ "CMD", "curl","-f", "http://app-1:8080/awesome-backend/healthcheck" ]
       timeout: 10s
       retries: 5
     restart: always
+  app-2:
+    container_name: awesome-backend-app-2
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    networks:
+      - awesome-backend-network
+    healthcheck:
+      test: [ "CMD", "curl","-f", "http://app-2:8080/awesome-backend/healthcheck" ]
+      timeout: 10s
+      retries: 5
+    restart: always
+  app-checker:
+    container_name: app-checker
+    image: curlimages/curl:8.18.0
+    networks:
+      - awesome-backend-network
+    command: >
+      /bin/sh -c '
+         while true; do
+           echo "[$$(date)] Проверка /healthcheck приложения..."
+      
+           HTTP_CODE1=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://app-1:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                        if [ "$$HTTP_CODE1" = "503" ] || [ "$$HTTP_CODE1" = "000" ]; then
+                           echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                           exit 1
+                        fi
+           HTTP_COD2E=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://app-2:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                        if [ "$$HTTP_CODE2" = "503" ] || [ "$$HTTP_CODE2" = "000" ]; then
+                           echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                           exit 1
+                        fi
+      
+           echo "[$$(date)] ✓ Приложение здорово"
+           sleep 10
+         done
+       '
+    depends_on:
+      - app-1
+      - app-2
+
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq
@@ -40,8 +88,21 @@ services:
     container_name: redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - awesome-backend-network
+
+volumes:
+  redis_data:
 networks:
-    awesome-backend-network:
-      driver: bridge
+  awesome-backend-network:
+    driver: bridge
