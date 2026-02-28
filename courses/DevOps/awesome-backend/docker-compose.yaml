@@ -9,10 +9,14 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8081:8080"
     networks:
-      - awesome-backend-network
+      - awesome-backend-network-1
+      - rabbit-net
+      - redis-net
     healthcheck:
       test: [ "CMD", "curl","-f", "http://app-1:8080/awesome-backend/healthcheck" ]
       timeout: 10s
@@ -28,10 +32,14 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8082:8080"
     networks:
-      - awesome-backend-network
+      - awesome-backend-network-2
+      - rabbit-net
+      - redis-net
     healthcheck:
       test: [ "CMD", "curl","-f", "http://app-2:8080/awesome-backend/healthcheck" ]
       timeout: 10s
@@ -41,7 +49,8 @@ services:
     container_name: app-checker
     image: curlimages/curl:8.18.0
     networks:
-      - awesome-backend-network
+      - awesome-backend-network-1
+      - awesome-backend-network-2
     command: >
       /bin/sh -c '
          while true; do
@@ -75,7 +84,9 @@ services:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - awesome-backend-network
+      - rabbit-net
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
       test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 30s
@@ -99,10 +110,17 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - awesome-backend-network
+      - redis-net
 
 volumes:
   redis_data:
+  rabbitmq-data:
 networks:
-  awesome-backend-network:
+  awesome-backend-network-1:
+    driver: bridge
+  awesome-backend-network-2:
+    driver: bridge
+  rabbit-net:
+    driver: bridge
+  redis-net:
     driver: bridge
