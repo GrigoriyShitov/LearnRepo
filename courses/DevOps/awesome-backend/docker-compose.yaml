@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app-1:
     container_name: awesome-backend-app-1
@@ -11,8 +13,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8081:8080"
     networks:
       - awesome-backend-network-1
       - rabbit-net
@@ -34,8 +34,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    ports:
-      - "8082:8080"
     networks:
       - awesome-backend-network-2
       - rabbit-net
@@ -45,6 +43,7 @@ services:
       timeout: 10s
       retries: 5
     restart: always
+
   app-checker:
     container_name: app-checker
     image: curlimages/curl:8.18.0
@@ -53,27 +52,28 @@ services:
       - awesome-backend-network-2
     command: >
       /bin/sh -c '
-         while true; do
-           echo "[$$(date)] Проверка /healthcheck приложения..."
-      
-           HTTP_CODE1=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://app-1:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
-                        if [ "$$HTTP_CODE1" = "503" ] || [ "$$HTTP_CODE1" = "000" ]; then
-                           echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
-                           exit 1
-                        fi
-           HTTP_COD2E=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://app-2:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
-                        if [ "$$HTTP_CODE2" = "503" ] || [ "$$HTTP_CODE2" = "000" ]; then
-                           echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
-                           exit 1
-                        fi
-      
-           echo "[$$(date)] ✓ Приложение здорово"
-           sleep 10
-         done
-       '
+              while true; do
+                echo "[$$(date)] Проверка /healthcheck приложения..."
+
+                HTTP_CODE1=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://awesome-backend-app-1:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                             if [ "$$HTTP_CODE1" = "503" ] || [ "$$HTTP_CODE1" = "000" ]; then
+                                echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                                exit 1
+                             fi
+                HTTP_COD2E=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://awesome-backend-app-2:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                             if [ "$$HTTP_CODE2" = "503" ] || [ "$$HTTP_CODE2" = "000" ]; then
+                                echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                                exit 1
+                             fi
+
+                echo "[$$(date)] ✓ Приложение здорово"
+                sleep 10
+              done
+            '
     depends_on:
       - app-1
       - app-2
+    restart: unless-stopped
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -112,10 +112,90 @@ services:
     networks:
       - redis-net
 
+  pg-master:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-master
+    hostname: pg-master
+    env_file:
+      - .env
+    expose:
+      - 8008
+    ports:
+      - "5433:5432"
+    networks:
+      - db-net
+      - zoo-net
+    volumes:
+      - pg-master:/var/lib/postgresql/data
+    command: patroni /postgres0.yml
+
+  pg-slave:
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-slave
+    hostname: pg-slave
+    expose:
+      - 8008
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-slave:/var/lib/postgresql/data
+    networks:
+      - db-net
+      - zoo-net
+    env_file:
+      - .env
+    command: patroni /postgres1.yml
+
+  zoo:
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: zoo
+    hostname: zoo
+    ports:
+      - "2181:2181"
+    networks:
+      - zoo-net
+    env_file:
+      - .env
+
+  haproxy:
+    image: haproxy:3.0
+    container_name: api-gateway
+    ports:
+      - "5432:5432"
+      - "7000:7000"
+      - "8081:8080"
+    depends_on:
+      - pg-master
+      - pg-slave
+      - zoo
+    networks:
+      - api-gateway
+      - db-net
+      - awesome-backend-network-1
+      - awesome-backend-network-2
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    restart: unless-stopped
+
+
 volumes:
   redis_data:
   rabbitmq-data:
+  pg-master:
+  pg-slave:
 networks:
+  api-gateway:
+    driver: bridge
+  db-net:
+    driver: bridge
+  zoo-net:
+    driver: bridge
   awesome-backend-network-1:
     driver: bridge
   awesome-backend-network-2:
