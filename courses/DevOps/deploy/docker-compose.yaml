@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  order-manager:
+    container_name: order-manager
+    env_file:
+      - .env
+      - .env.rabbit
+      - .env.redis
+      - .env.postgres
+      - .env.minio
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    networks:
+      - awesome-backend-network-1
+    healthcheck:
+      test: [ "CMD", "curl","-f", "http://order-manager:8080/awesome-backend/healthcheck" ]
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  order-processor:
+    container_name: order-processor
+    env_file:
+      - .env
+      - .env.rabbit
+      - .env.redis
+      - .env.postgres
+      - .env.minio
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.processor
+    depends_on:
+      order-manager:
+        condition: service_healthy
+    networks:
+      - awesome-backend-network-2
+    healthcheck:
+      test: [ "CMD", "curl","-f", "http://order-processor:8080/awesome-backend/healthcheck" ]
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  app-checker:
+    container_name: app-checker
+    image: curlimages/curl:8.18.0
+    networks:
+      - awesome-backend-network-1
+      - awesome-backend-network-2
+    command: >
+      /bin/sh -c '
+              while true; do
+                echo "[$$(date)] Проверка /healthcheck приложения..."
+
+                HTTP_CODE1=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://awesome-backend-app-1:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                             if [ "$$HTTP_CODE1" = "503" ] || [ "$$HTTP_CODE1" = "000" ]; then
+                                echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                                exit 1
+                             fi
+                HTTP_COD2E=$$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://awesome-backend-app-2:8080/awesome-backend/healthcheck 2>/dev/null || echo "000")
+                             if [ "$$HTTP_CODE2" = "503" ] || [ "$$HTTP_CODE2" = "000" ]; then
+                                echo "[$$(date)] ❌ Получен 503 (или нет соединения)"
+                                exit 1
+                             fi
+
+                echo "[$$(date)] ✓ Приложение здорово"
+                sleep 10
+              done
+            '
+    depends_on:
+      - order-manager
+      - order-processor
+    restart: unless-stopped
+
+networks:
+  awesome-backend-network-1:
+    driver: bridge
+  awesome-backend-network-2:
+    driver: bridge

@@ -1,0 +1,33 @@
+services:
+  main-app-1:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: main-app:local
+    container_name: main-app-1
+    ports:
+      - "8001:8000"
+    env_file:
+      - .env-app
+
+  main-app-2:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: main-app:local
+    container_name: main-app-2
+    ports:
+      - "8002:8000"
+    env_file:
+      - .env-app
+
+  order-processor:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.processor
+    image: order-processor:local
+    container_name: order-processor
+    expose:
+      - "8000"
+    env_file:
+      - .env-app

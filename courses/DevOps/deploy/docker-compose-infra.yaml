@@ -1,0 +1,228 @@
+version: "3.8"
+
+services:
+  init-db:
+    image: postgres:16
+    container_name: init-db
+    env_file:
+      - .env.postgres
+    command: >
+      sh -c "
+        set -e
+
+        hosts='haproxy pg-master pg-slave'
+        timeout_seconds=300
+        interval=2
+        start_ts=$$(date +%s)
+
+        echo \"Waiting for a writable Postgres master among: $$hosts\"
+
+        while true; do
+          for h in $$hosts; do
+            echo \"Checking $$h...\"
+
+            if pg_isready -h $$h -p 5432 -U $$POSTGRES_USER >/dev/null 2>&1; then
+              echo \"$$h accepts connections, checking recovery state...\"
+
+              role_flag=$$(PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$h -U $$POSTGRES_USER -d $$POSTGRES_DB -t -A -c 'SELECT pg_is_in_recovery();' 2>/dev/null || echo '')
+
+              if [ \"$$role_flag\" = \"t\" ]; then
+                echo \"$$h is replica -- skipping\"
+
+              elif [ \"$$role_flag\" = \"f\" ]; then
+                echo \"Found master at $$h -- applying init.sql\"
+
+                PGPASSWORD=$$POSTGRES_PASSWORD psql -h $$h -U $$POSTGRES_USER -d $$POSTGRES_DB -f /scripts/init.sql
+
+                echo \"init.sql applied successfully on $$h\"
+                exit 0
+              else
+                echo \"Could not determine role for $$h (got: $$role_flag)\"
+              fi
+            else
+              echo \"$$h not ready\"
+            fi
+          done
+
+          now_ts=$$(date +%s)
+          elapsed=$$((now_ts - start_ts))
+
+          if [ $$elapsed -ge $$timeout_seconds ]; then
+            echo \"Timeout waiting for writable master\"
+            exit 1
+          fi
+
+          sleep $$interval
+        done
+      "
+    volumes:
+      - ./pg:/scripts
+    restart: "no"
+
+  init-minio:
+    image: minio/mc
+    container_name: init-minio
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: >
+      "
+      until mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD} --api S3v4; do
+        echo 'Waiting for MinIO...';
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/${MINIO_BUCKET};
+      echo 'Bucket ${MINIO_BUCKET} ensured';
+      "
+    env_file:
+      - .env.minio
+    restart: "no"
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    env_file:
+      - .env.rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - awesome-backend-network-1
+      - awesome-backend-network-2
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+      start_interval: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    restart: always
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - awesome-backend-network-1
+      - awesome-backend-network-2
+
+  minio:
+    image: minio/minio
+    container_name: infra-minio
+    env_file:
+      - .env
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zoo:
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: zoo
+    hostname: zoo
+    ports:
+      - "2181:2181"
+    networks:
+      - zoo-net
+    env_file:
+      - .env.rabbit
+
+  pg-master:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-master
+    hostname: pg-master
+    env_file:
+      - .env.postgres
+    expose:
+      - 8008
+    ports:
+      - "5433:5432"
+    networks:
+      - db-net
+      - zoo-net
+    volumes:
+      - pg-master:/var/lib/postgresql/data
+    command: patroni /postgres0.yml
+
+  pg-slave:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-slave
+    hostname: pg-slave
+    expose:
+      - 8008
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-slave:/var/lib/postgresql/data
+    networks:
+      - db-net
+      - zoo-net
+    env_file:
+      - .env.postgres
+    command: patroni /postgres1.yml
+
+  haproxy:
+    image: haproxy:3.0
+    container_name: api-gateway
+    ports:
+      - "5432:5432"
+      - "7000:7000"
+      - "8081:8080"
+    depends_on:
+      - pg-master
+      - pg-slave
+      - zoo
+    networks:
+      - api-gateway
+      - db-net
+      - awesome-backend-network-1
+      - awesome-backend-network-2
+    volumes:
+      - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  rabbitmq-data:
+  pg-master:
+  pg-slave:
+  minio-data:
+
+networks:
+  api-gateway:
+    driver: bridge
+  db-net:
+    driver: bridge
+  zoo-net:
+    driver: bridge
+  awesome-backend-network-1:
+    driver: bridge
+  awesome-backend-network-2:
+    driver: bridge
+  rabbit-net:
+    driver: bridge
+  redis-net:
+    driver: bridge

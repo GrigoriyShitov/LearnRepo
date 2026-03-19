@@ -3,10 +3,10 @@ WORKDIR /src
 
 RUN apk add --no-cache make git curl
 
-COPY go.mod go.sum ./
+COPY ../awesome-backend/go.mod ../awesome-backend/go.sum ./
 RUN --mount=type=cache,target=/go/pkg/mod go mod download
 
-COPY .. .
+COPY ../awesome-backend .
 
 ARG MAKE_TARGET=build
 RUN --mount=type=cache,target=/go/pkg/mod \
