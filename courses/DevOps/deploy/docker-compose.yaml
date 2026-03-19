@@ -1,19 +1,58 @@
 version: '3.8'
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+x-common-settings: &common-settings
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
 
 services:
   order-manager:
     container_name: order-manager
+    image: order-manager:1.0
+    hostname: order-manager
     env_file:
       - .env
       - .env.rabbit
       - .env.redis
-      - .env.postgres
+      - .env.pg-master
       - .env.minio
     build:
       context: ..
       dockerfile: deploy/Dockerfile
     networks:
-      - awesome-backend-network-1
+      - app-network
+    volumes:
+      - ./logs/order-manager:/var/log/app/order-manager:rw
+    healthcheck:
+      test: [ "CMD", "curl","-f", "http://order-manager:8080/awesome-backend/healthcheck" ]
+      timeout: 10s
+      retries: 5
+    restart: always
+  order-manager-replica:
+    image: order-manager:1.0
+    container_name: order-manager-replica
+    hostname: order-manager-replica
+    env_file:
+      - .env
+      - .env.rabbit
+      - .env.redis
+      - .env.pg-master
+      - .env.minio
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    networks:
+      - app-network
+    volumes:
+      - ./logs/order-manager:/var/log/app/order-manager:rw
     healthcheck:
       test: [ "CMD", "curl","-f", "http://order-manager:8080/awesome-backend/healthcheck" ]
       timeout: 10s
@@ -21,12 +60,14 @@ services:
     restart: always
 
   order-processor:
+    image: order-manager:1.0
     container_name: order-processor
+    hostname: order-manager-replica
     env_file:
       - .env
       - .env.rabbit
       - .env.redis
-      - .env.postgres
+      - .env.pg-master
       - .env.minio
     build:
       context: ..
@@ -35,19 +76,46 @@ services:
       order-manager:
         condition: service_healthy
     networks:
-      - awesome-backend-network-2
+      - app-network
+      - storage-network
+    volumes:
+      - ./logs/order-processor:/var/log/app/order-processor:rw
     healthcheck:
       test: [ "CMD", "curl","-f", "http://order-processor:8080/awesome-backend/healthcheck" ]
       timeout: 10s
       retries: 5
     restart: always
 
+  fluentd:
+    <<: *common-settings
+    build:
+      context: .
+      dockerfile: Dockerfile.fluentd
+    image: fluentd:local
+    container_name: fluentd
+    hostname: fluentd
+    volumes:
+      - ./fluent.conf:/fluentd/etc/fluent.conf:ro
+      - ./logs:/var/log/app:ro
+    env_file:
+      - .env-fluentd
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: [ "CMD", "curl", "-sf", "http://localhost:24220/api/plugins.json" ]
+    depends_on:
+      order-manager:
+        condition: service_healthy
+      order-processor:
+        condition: service_started
+    networks:
+      - app-network
+      - obsvr-network
+
   app-checker:
     container_name: app-checker
     image: curlimages/curl:8.18.0
     networks:
-      - awesome-backend-network-1
-      - awesome-backend-network-2
+      - app-network
     command: >
       /bin/sh -c '
               while true; do
@@ -74,7 +142,15 @@ services:
     restart: unless-stopped
 
 networks:
-  awesome-backend-network-1:
-    driver: bridge
-  awesome-backend-network-2:
-    driver: bridge
+  app-network:
+    external: true
+    name: app-network
+  storage-network:
+    external: true
+    name: storage-network
+  comm-network:
+    external: true
+    name: comm-network
+  obsvr-network:
+    external: true
+    name: obsvr-network

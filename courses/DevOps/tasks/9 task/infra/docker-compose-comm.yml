@@ -1,0 +1,78 @@
+x-common-settings: &common-settings
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  rabbitmq:
+    <<: *common-settings
+    image: rabbitmq:4-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    env_file:
+      - envs/.env-rmq
+    expose:
+      - "5672"
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+    networks:
+      - app-network
+      - comm-network
+
+  redis:
+    <<: *common-settings
+    image: redis:7-alpine
+    container_name: redis
+    hostname: redis
+    expose:
+      - "6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "redis-cli", "ping"]
+    networks:
+      - app-network
+      - comm-network
+
+  haproxy:
+    <<: *common-settings
+    image: haproxy:3.0
+    container_name: haproxy
+    hostname: haproxy
+    expose:
+      - "5432"
+    ports:
+      - "7000:7000"
+    volumes:
+      - ./configs/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - app-network
+      - comm-network
+
+networks:
+  app-network:
+    external: true
+    name: app-network
+  comm-network:
+    external: true
+    name: comm-network
+
+volumes:
+  rabbitmq-data:
+  redis-data:

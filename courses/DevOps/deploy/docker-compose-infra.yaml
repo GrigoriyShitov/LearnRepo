@@ -1,11 +1,24 @@
 version: "3.8"
 
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+x-common-settings: &common-settings
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   init-db:
     image: postgres:16
     container_name: init-db
     env_file:
-      - .env.postgres
+      - .env.pg-master
     command: >
       sh -c "
         set -e
@@ -85,8 +98,8 @@ services:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - awesome-backend-network-1
-      - awesome-backend-network-2
+      - app-network
+      - comm-network
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -113,8 +126,8 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - awesome-backend-network-1
-      - awesome-backend-network-2
+      - app-network
+      - comm-network
 
   minio:
     image: minio/minio
@@ -128,10 +141,13 @@ services:
     volumes:
       - minio-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/ready || exit 1"]
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:9000/minio/health/ready || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - storage-network
+      - comm-network
 
   zoo:
     image: confluentinc/cp-zookeeper:7.7.1
@@ -139,12 +155,16 @@ services:
     hostname: zoo
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper
     networks:
-      - zoo-net
+      - storage-network
+      - comm-network
     env_file:
-      - .env.rabbit
+      - .env.zoo
 
   pg-master:
+    <<: *common-settings
     build:
       context: ..
       dockerfile: deploy/Dockerfile.postgres
@@ -152,19 +172,20 @@ services:
     container_name: pg-master
     hostname: pg-master
     env_file:
-      - .env.postgres
+      - .env.pg-master
     expose:
       - 8008
     ports:
       - "5433:5432"
     networks:
-      - db-net
-      - zoo-net
+      - storage-network
+      - comm-network
     volumes:
       - pg-master:/var/lib/postgresql/data
     command: patroni /postgres0.yml
 
   pg-slave:
+    <<: *common-settings
     build:
       context: ..
       dockerfile: deploy/Dockerfile.postgres
@@ -178,10 +199,10 @@ services:
     volumes:
       - pg-slave:/var/lib/postgresql/data
     networks:
-      - db-net
-      - zoo-net
+      - storage-network
+      - comm-network
     env_file:
-      - .env.postgres
+      - .env.pg-slave
     command: patroni /postgres1.yml
 
   haproxy:
@@ -196,33 +217,66 @@ services:
       - pg-slave
       - zoo
     networks:
-      - api-gateway
-      - db-net
-      - awesome-backend-network-1
-      - awesome-backend-network-2
+      - app-network
+      - comm-network
     volumes:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     restart: unless-stopped
 
+  opensearch:
+    <<: *common-settings
+    image: opensearchproject/opensearch:2.11.1
+    container_name: opensearch
+    hostname: opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    expose:
+      - "9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1" ]
+      start_period: 60s
+    networks:
+      - app-network
+      - obsvr-network
+      - storage-network
+
+  opensearch-dashboards:
+    <<: *common-settings
+    image: opensearchproject/opensearch-dashboards:2.11.1
+    container_name: opensearch-dashboards
+    hostname: opensearch-dashboards
+    ports:
+      - "5601:5601"
+    environment:
+      - OPENSEARCH_HOSTS=http://opensearch:9200
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: [ "CMD-SHELL", "curl -sf http://localhost:5601/api/status || exit 1" ]
+      start_period: 60s
+    networks:
+      - obsvr-network
 volumes:
   redis_data:
   rabbitmq-data:
   pg-master:
   pg-slave:
   minio-data:
+  opensearch-data:
+  zookeeper-data:
 
 networks:
-  api-gateway:
-    driver: bridge
-  db-net:
-    driver: bridge
-  zoo-net:
-    driver: bridge
-  awesome-backend-network-1:
-    driver: bridge
-  awesome-backend-network-2:
-    driver: bridge
-  rabbit-net:
-    driver: bridge
-  redis-net:
-    driver: bridge
+  app-network:
+    name: app-network
+  storage-network:
+    name: storage-network
+  comm-network:
+    name: comm-network
+  obsvr-network:
+    name: obsvr-network

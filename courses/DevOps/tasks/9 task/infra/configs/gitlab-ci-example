@@ -1,0 +1,30 @@
+For pipeline:
+
+stages:
+  - build
+  - test
+
+build-main-app:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t main-app:local .
+  tags:
+    - my-runner
+
+build-op-app:
+  stage: build
+  image: docker:latest
+  script:
+    - docker build -t order-processor:local -f Dockerfile.processor .
+
+check-images:
+  stage: test
+  image: docker:latest
+  script:
+    - docker images | grep main-app:local
+    - docker images | grep order-processor:local
+
+For runner config:
+volumes = ["/var/run/docker.sock:/var/run/docker.sock"]
+network_mode = "host"

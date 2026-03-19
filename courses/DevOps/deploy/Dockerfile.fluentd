@@ -1,0 +1,10 @@
+FROM fluent/fluentd:v1.16-debian-1
+
+USER root
+
+RUN apt update && apt install wget -y --no-install-recommends \
+    && gem install fluent-plugin-opensearch fluent-plugin-s3 --no-document \
+    && rm -rf /var/lib/apt/lists/*
+
+USER fluent
+

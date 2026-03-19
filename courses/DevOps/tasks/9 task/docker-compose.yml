@@ -1,0 +1,165 @@
+x-common-settings: &common-settings
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  # ============================================
+  # Init сервисы
+  # ============================================
+  
+  init-postgres:
+    image: postgres:16-alpine
+    container_name: init-postgres
+    env_file:
+      - .env-init
+    volumes:
+      - ./app/init-db.sql:/init-db.sql:ro
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL via HAProxy...';
+        until pg_isready -h $$PGHOST -p $$PGPORT -U $$PGUSER; do
+          echo 'PostgreSQL is unavailable - sleeping';
+          sleep 2;
+        done;
+        echo 'PostgreSQL is up - executing init script';
+        psql -f /init-db.sql;
+        echo 'Database initialized successfully';
+      "
+    networks:
+      - app-network
+    restart: "no"
+
+  init-minio:
+    image: minio/mc
+    container_name: init-minio
+    env_file:
+      - .env-init
+    environment:
+      BUCKET_NAME: ${BUCKET_NAME}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      until mc alias set myminio http://minio:9000 minioadmin minioadmin; do
+        echo 'Waiting for MinIO connection...';
+        sleep 2;
+      done;
+      echo 'MinIO is ready. Creating bucket...';
+      mc mb logs --ignore-existing;
+      echo 'MinIO bucket created successfully';
+      "
+    networks:
+      - storage-network
+    restart: "no"
+
+  health-checker:
+    image: curlimages/curl:latest
+    entrypoint: /bin/sh
+    command: >
+      -c '
+      while true; do
+        CODE=$$(curl -s -o /dev/null -w "%{http_code}" http://main-app:8000/healthy) &&
+        [ "$$CODE" = "503" ] && echo "Got 503! Exiting..." && exit 1 || true &&
+        sleep 60
+      done
+      '
+    depends_on:
+      main-app:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: no
+
+  # ============================================
+  # Основные сервисы
+  # ============================================
+
+  main-app:
+    <<: *common-settings
+    build: .
+    image: main-app:local
+    container_name: main-app
+    hostname: main-app
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./logs:/opt/app/log/main
+    env_file:
+      - .env-main
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "http://localhost:8000/healthy"]
+    depends_on:
+      init-postgres:
+        condition: service_completed_successfully
+      init-minio:
+        condition: service_completed_successfully
+    networks:
+      - app-network
+
+  order-processor:
+    <<: *common-settings
+    build:
+      context: .
+      dockerfile: Dockerfile.processor
+    image: order-processor:local
+    container_name: order-processor
+    hostname: order-processor
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./logs:/app/log/modules
+    env_file:
+      - .env-op
+    depends_on:
+      init-postgres:
+        condition: service_completed_successfully
+      main-app:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  fluentd:
+    <<: *common-settings
+    build:
+      context: .
+      dockerfile: Dockerfile.fluentd
+    image: fluentd:local
+    container_name: fluentd
+    hostname: fluentd
+    volumes:
+      - ./app/fluent.conf:/fluentd/etc/fluent.conf:ro
+      - ./logs:/var/log/app:ro
+    env_file:
+      - .env-fluentd
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "curl", "-sf", "http://localhost:24220/api/plugins.json"]
+    depends_on:
+      main-app:
+        condition: service_healthy
+      order-processor:
+        condition: service_started
+    networks:
+      - app-network
+      - obsvr-network
+
+networks:
+  app-network:
+    external: true
+    name: app-network
+  obsvr-network:
+    external: true
+    name: obsvr-network
+  storage-network:
+    external: true
+    name: storage-network

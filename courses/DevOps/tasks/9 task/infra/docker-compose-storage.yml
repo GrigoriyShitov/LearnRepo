@@ -1,0 +1,170 @@
+x-common-settings: &common-settings
+  restart: unless-stopped
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 40s
+
+services:
+  zoo:
+    <<: *common-settings
+    image: confluentinc/cp-zookeeper:7.7.1
+    container_name: zoo
+    hostname: zoo
+    expose:
+      - "2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "nc -z localhost 2181 || exit 1"]
+    networks:
+      - storage-network
+
+  pg-master:
+    <<: *common-settings
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-master
+    hostname: pg-master
+    env_file:
+      - envs/.env-psql
+    expose:
+      - "8008"
+      - "5432"
+    volumes:
+      - pg-master:/var/lib/postgresql/data
+      - ./configs/patroni/postgres0.yml:/postgres0.yml:ro
+    command: patroni /postgres0.yml
+    depends_on:
+      zoo:
+        condition: service_healthy
+    networks:
+      - storage-network
+      - comm-network
+
+  pg-slave:
+    <<: *common-settings
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: local-postgres:patroni
+    container_name: pg-slave
+    hostname: pg-slave
+    expose:
+      - "8008"
+      - "5432"
+    volumes:
+      - pg-slave:/var/lib/postgresql/data
+      - ./configs/patroni/postgres1.yml:/postgres1.yml:ro
+    env_file:
+      - envs/.env-psql
+    command: patroni /postgres1.yml
+    depends_on:
+      zoo:
+        condition: service_healthy
+      pg-master:
+        condition: service_started
+    networks:
+      - storage-network
+      - comm-network
+
+  minio:
+    <<: *common-settings
+    image: minio/minio
+    container_name: minio
+    hostname: minio
+    expose:
+      - "9000"
+    ports:
+      - "9001:9001"
+    env_file:
+      - envs/.env-s3
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "mc", "ready", "local"]
+      start_period: 60s
+    networks:
+      - storage-network
+      - obsvr-network
+
+  opensearch:
+    <<: *common-settings
+    image: opensearchproject/opensearch:2.11.1
+    container_name: opensearch
+    hostname: opensearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+    expose:
+      - "9200"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      start_period: 60s
+    networks:
+      - app-network
+      - obsvr-network
+      - storage-network
+
+  prometheus:
+    <<: *common-settings
+    image: prom/prometheus:v2.48.1
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "--no-verbose", "--spider", "--tries=1", "http://localhost:9090/-/healthy"]
+    networks:
+      - app-network
+      - obsvr-network
+      - storage-network
+
+networks:
+  app-network:
+    external: true
+    name: app-network
+  storage-network:
+    external: true
+    name: storage-network
+  comm-network:
+    external: true
+    name: comm-network
+  obsvr-network:
+    external: true
+    name: obsvr-network
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  pg-master:
+  pg-slave:
+  minio-data:
+  opensearch-data:
+  prometheus-data:

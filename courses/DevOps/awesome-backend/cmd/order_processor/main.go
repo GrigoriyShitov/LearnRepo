@@ -198,7 +198,7 @@ func startConsumer() {
 	var err error
 
 	// Подключаемся к RabbitMQ
-	rmqHost := getEnv("RMQ_HOST", "rabbitmq")
+	rmqHost := getEnv("RMQ_HOST", "localhost")
 	rmqUser := getEnv("RMQ_USER", "guest")
 	rmqPass := getEnv("RMQ_PASSWORD", "guest")
 
