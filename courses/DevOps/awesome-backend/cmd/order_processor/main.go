@@ -43,7 +43,7 @@ var (
 // Инициализация подключений
 func init() {
 	// MinIO клиент
-	endpoint := getEnv("MINIO_ENDPOINT", "localhost:9000")
+	endpoint := getEnv("MINIO_ENDPOINT", "minio:9000")
 	accessKey := getEnv("MINIO_ACCESS_KEY", "minioadmin")
 	secretKey := getEnv("MINIO_SECRET_KEY", "minioadmin")
 

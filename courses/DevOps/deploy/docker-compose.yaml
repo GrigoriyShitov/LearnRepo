@@ -36,6 +36,7 @@ services:
       timeout: 10s
       retries: 5
     restart: always
+
   order-manager-replica:
     image: order-manager:1.0
     container_name: order-manager-replica
@@ -60,9 +61,9 @@ services:
     restart: always
 
   order-processor:
-    image: order-manager:1.0
+    image: order-processor:1.0
     container_name: order-processor
-    hostname: order-manager-replica
+    hostname: order-processor
     env_file:
       - .env
       - .env.rabbit
@@ -98,7 +99,7 @@ services:
       - ./fluent.conf:/fluentd/etc/fluent.conf:ro
       - ./logs:/var/log/app:ro
     env_file:
-      - .env-fluentd
+      - .env.fluentd
     healthcheck:
       <<: *healthcheck-defaults
       test: [ "CMD", "curl", "-sf", "http://localhost:24220/api/plugins.json" ]
