@@ -3,6 +3,20 @@ from typing import Final
 from prompt_toolkit.validation import Validator, ValidationError
 
 
+class SkuValidator(Validator):
+    MAX_LENGTH: Final[int] = 30
+
+    def validate(self, document):
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message="SKU не может быть пустым", cursor_position=0)
+        if len(text) > self.MAX_LENGTH:
+            raise ValidationError(
+                message=f"SKU не может быть длиннее {self.MAX_LENGTH} символов",
+                cursor_position=len(text),
+            )
+
+
 class PriceValidator(Validator):
     def validate(self, document):
         text = document.text.strip()
