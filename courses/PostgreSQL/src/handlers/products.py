@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from prompt_toolkit import prompt
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.shortcuts import choice
 from psycopg.rows import dict_row
 from rich.panel import Panel
 from rich.table import Table
@@ -11,13 +11,7 @@ from commands import command, CATEGORY_PRODUCTS
 from console import console, render_error
 from db import get_conn
 from handlers.product_categories import ProductCategory
-from validators import (
-    ChoiceValidator,
-    NonEmptyValidator,
-    PriceValidator,
-    SkuValidator,
-    YesNoValidator,
-)
+from validators import NonEmptyValidator, PriceValidator, SkuValidator, YesNoValidator
 
 
 @dataclass
@@ -37,24 +31,18 @@ def _get_categories() -> list[ProductCategory]:
     return [ProductCategory(id=row["id"], name=row["name"]) for row in rows]
 
 
-def _prompt_category_id(categories: list[ProductCategory], default: str = "") -> str:
-    console.print("[cyan]Доступные категории:[/cyan]")
-    for category in categories:
-        console.print(f"  [dim]{category.id}[/dim] — {category.name}")
+def _prompt_category_id(
+    categories: list[ProductCategory], default_name: str | None = None
+) -> str:
+    options = [(str(category.id), category.name) for category in categories]
+    default = None
+    if default_name is not None:
+        for category in categories:
+            if category.name == default_name:
+                default = str(category.id)
+                break
 
-    choices = [str(category.id) for category in categories]
-    category_validator = ChoiceValidator(
-        choices,
-        message="Выберите ID категории из списка. Используйте Tab для автодополнения.",
-    )
-    category_completer = WordCompleter(choices, ignore_case=False)
-
-    return prompt(
-        "ID категории: ",
-        default=default,
-        validator=category_validator,
-        completer=category_completer,
-    ).strip()
+    return choice(message="Категория:", options=options, default=default)
 
 
 def _fetch_product(_id: str) -> Product | None:
@@ -209,7 +197,7 @@ def edit_product(_id: str) -> None:
     price_str = prompt(
         "Цена: ", default=str(row["price"]), validator=PriceValidator()
     ).strip()
-    category_id = _prompt_category_id(categories, default=str(row["category_id"]))
+    category_id = _prompt_category_id(categories, default_name=row["category"])
 
     try:
         conn.execute(

@@ -75,31 +75,19 @@ def _warehouse_count(conn) -> int:
         return cur.fetchone()[0]
 
 
-def _central_count(conn) -> int:
-    with conn.cursor() as cur:
-        cur.execute("SELECT COUNT(*) FROM catalog.warehouses WHERE is_central = TRUE")
-        return cur.fetchone()[0]
-
-
-def _prompt_is_central(default: bool = False) -> bool:
-    default_str = "д" if default else "н"
+def _prompt_make_central() -> bool:
     answer = prompt(
-        "Центральный склад? (y/n, д/н): ",
-        default=default_str,
+        "Сделать этот склад центральным? (y/n, д/н): ",
         validator=YesNoValidator(),
         completer=yes_no_completer,
     )
     return YesNoValidator.is_yes(answer)
 
 
-def _unset_other_central(conn, exclude_id: int | None = None) -> None:
-    if exclude_id is None:
-        conn.execute("UPDATE catalog.warehouses SET is_central = FALSE")
-    else:
-        conn.execute(
-            "UPDATE catalog.warehouses SET is_central = FALSE WHERE id != %s",
-            (exclude_id,),
-        )
+def _unset_other_central(conn) -> None:
+    conn.execute(
+        "UPDATE catalog.warehouses SET is_central = FALSE WHERE is_central = TRUE"
+    )
 
 
 def _warehouse_label_text(city: str, label: str | None) -> str:
@@ -167,7 +155,7 @@ def add_warehouse() -> None:
         is_central = True
         console.print("[dim]Первый склад автоматически назначен центральным[/dim]")
     else:
-        is_central = _prompt_is_central(default=False)
+        is_central = _prompt_make_central()
 
     if is_central:
         _unset_other_central(conn)
@@ -211,17 +199,13 @@ def edit_warehouse(_id: str) -> None:
         prompt("Метка (необязательно): ", default=warehouse.label or "").strip() or None
     )
 
-    is_central = _prompt_is_central(default=warehouse.is_central)
+    if warehouse.is_central:
+        is_central = True
+    else:
+        is_central = _prompt_make_central()
 
-    if warehouse.is_central and not is_central and _central_count(conn) == 1:
-        render_error(
-            "Нельзя снять флаг центрального склада: "
-            "сначала назначьте другой склад центральным"
-        )
-        return
-
-    if is_central:
-        _unset_other_central(conn, exclude_id=int(_id))
+    if is_central and not warehouse.is_central:
+        _unset_other_central(conn)
 
     conn.execute(
         """
@@ -266,13 +250,6 @@ def delete_warehouse(_id: str) -> None:
         return
 
     conn.execute("DELETE FROM catalog.warehouses WHERE id = %s", (_id,))
-
-    remaining = _warehouse_count(conn)
-    if remaining == 1:
-        conn.execute(
-            "UPDATE catalog.warehouses SET is_central = TRUE WHERE id = "
-            "(SELECT id FROM catalog.warehouses ORDER BY id LIMIT 1)"
-        )
 
     console.print(
         f"[green]{_warehouse_label_text(warehouse.city, warehouse.label)} удален[/green]"
