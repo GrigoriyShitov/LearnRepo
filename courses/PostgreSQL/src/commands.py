@@ -6,10 +6,12 @@ from prompt_toolkit.completion import NestedCompleter
 
 # Категории команд
 CATEGORY_GENERAL: Final[str] = "ПРОЧЕЕ"
-CATEGORY_WAREHOUSES: Final[str] = "СКЛАДЫ"
+CATEGORY_PRODUCT_CATEGORIES: Final[str] = "КАТЕГОРИИ"
 CATEGORY_PRODUCTS: Final[str] = "ТОВАРЫ"
+CATEGORY_WAREHOUSES: Final[str] = "СКЛАДЫ"
 
 CATEGORIES: Final[Sequence[str]] = [
+    CATEGORY_PRODUCT_CATEGORIES,
     CATEGORY_PRODUCTS,
     CATEGORY_WAREHOUSES,
     CATEGORY_GENERAL,
