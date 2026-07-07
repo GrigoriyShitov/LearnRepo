@@ -32,9 +32,9 @@ REPL-приложение для управления каталогом тов�
 
 ### ER-диаграмма (draw.io, Crow's Foot)
 
-Исходник: [img/er-drawio.drawio](../img/er-drawio.drawio)
+Исходник: [img/er-drawio.drawio](/img/er-drawio.drawio)
 
-![ER-диаграмма draw.io](../../img/er-drawio.png)
+![ER-диаграмма draw.io](/img/er-drawio.png)
 
 ---
 
@@ -71,13 +71,13 @@ REPL-приложение для управления каталогом тов�
 
 **draw.io (ручная, целевая схема):**
 
-Исходник: [img/er-drawio.drawio](../img/er-drawio.drawio)
+Исходник: [img/er-drawio.drawio](/img/er-drawio.drawio)
 
-![ER-диаграмма draw.io](../../img/er-drawio.png)
+![ER-диаграмма draw.io](/img/er-drawio.png)
 
 **DBeaver (фактическая БД после миграции):**
 
-![ER-диаграмма DBeaver](../../img/er-dbeaver.png)
+![ER-диаграмма DBeaver](/img/er-dbeaver.png)
 
 ### Сравнение ER-диаграмм
 
