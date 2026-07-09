@@ -146,17 +146,24 @@ def _prompt_warehouse_id(default_id: int | None = None) -> str:
     return choice(message="Склад:", options=options, default=default)
 
 
-def _get_available_products(exclude_ids: set[int]) -> list[dict]:
+def _get_available_products(order_id: str) -> list[dict]:
+    """Вернуть товары, которых ещё нет в заказе (1 запрос к БД)."""
     conn = get_conn()
     with conn.cursor(row_factory=dict_row) as cur:
-        cur.execute("""
-            SELECT id, sku, name, price
-            FROM catalog.products
-            ORDER BY id
-            """)
-        products = cur.fetchall()
-
-    return [p for p in products if p["id"] not in exclude_ids]
+        cur.execute(
+            """
+            SELECT p.id, p.sku, p.name, p.price
+            FROM catalog.products p
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM sales.order_items oi
+                WHERE oi.order_id = %s AND oi.product_id = p.id
+            )
+            ORDER BY p.id
+            """,
+            (order_id,),
+        )
+        return cur.fetchall()
 
 
 def _product_display(product: dict) -> str:
@@ -238,8 +245,7 @@ def _render_order(order: Order, items: list[OrderItem]) -> None:
 
 def _add_order_item_interactive(order_id: str) -> bool:
     conn = get_conn()
-    existing_ids = {item.product_id for item in _fetch_order_items(order_id)}
-    available = _get_available_products(existing_ids)
+    available = _get_available_products(order_id)
 
     if not available:
         render_error("Нет доступных товаров для добавления в заказ")
