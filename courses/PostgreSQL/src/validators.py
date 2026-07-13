@@ -43,6 +43,23 @@ class NonEmptyValidator(Validator):
             raise ValidationError(message=self.message, cursor_position=0)
 
 
+class QuantityValidator(Validator):
+    def validate(self, document):
+        text = document.text.strip()
+        if not text:
+            raise ValidationError(message="Введите количество", cursor_position=0)
+        try:
+            quantity = int(text)
+            if quantity <= 0:
+                raise ValidationError(
+                    message="Количество должно быть больше 0", cursor_position=len(text)
+                )
+        except ValueError as e:
+            raise ValidationError(
+                message="Введите целое число", cursor_position=len(text)
+            ) from e
+
+
 class YesNoValidator(Validator):
     YES_VALUES: Final[frozenset[str]] = frozenset(["y", "yes", "д", "да"])
     NO_VALUES: Final[frozenset[str]] = frozenset(["n", "no", "н", "нет"])
